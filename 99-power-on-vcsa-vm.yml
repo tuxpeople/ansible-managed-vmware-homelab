@@ -1,0 +1,12 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+
+  - name: Ensure VCSA is on
+    community.vmware.vmware_guest_powerstate:
+      hostname: "{{ vcenter_esxi_host }}"
+      username: "{{ esxi_username }}"
+      password: "{{ esxi_password }}"
+      validate_certs: false
+      name: "VMware vCenter Server"
+      state: powered-on

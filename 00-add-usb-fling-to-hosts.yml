@@ -1,0 +1,46 @@
+- hosts: esxi
+  gather_facts: false
+
+  vars_prompt:
+    - name: "reboot_prompt_response"
+      prompt: "After installing the USB NIC drivers fling, do you want to reboot all hosts (yes/no)?"
+      private: no
+
+  tasks:
+  # ensure SSH is enabled (ansible-playbook 99-enable-ssh.yml)
+  - name: Start SSH service setting for all ESXi Hosts
+    community.vmware.vmware_host_service_manager:
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      hostname: '{{ hostvars[item].ansible_host }}'
+      username: '{{ esxi_username }}'
+      password: '{{ esxi_password }}'
+      validate_certs: false
+      service_name: TSM-SSH
+      state: present
+    loop: "{{ groups['esxi'] }}"
+    run_once: true # no need to do for each host
+    delegate_to: localhost
+    
+
+  - name: Copying '{{ source_usb_driver_zip }}' from local to '{{ dest_usb_driver_zip }}' on each esxi host for importing
+    ansible.builtin.copy:
+      src: '{{ source_usb_driver_zip }}'
+      dest: '{{ dest_usb_driver_zip }}'
+
+  - name: Use esxcli to apply '{{ dest_usb_driver_zip }}' to the esxi host
+    shell: esxcli software component apply -d '{{ dest_usb_driver_zip }}'
+
+  # Forcefully reboot all esxi hosts
+  - name: Reboot each host in the cluster
+    community.vmware.vmware_host_powerstate:
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      hostname: '{{ hostvars[item].ansible_host }}'
+      username: '{{ esxi_username }}'
+      password: '{{ esxi_password }}'
+      validate_certs: false
+      state: reboot-host
+      force: true # I don't care that it's not in maintenance mode
+    loop: "{{ groups['esxi'] }}"
+    run_once: true # no need to do for each host
+    delegate_to: localhost
+    when: reboot_prompt_response | bool # validates yes/no to T/F

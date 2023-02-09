@@ -1,0 +1,218 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+
+  #############################################
+  ###########   DVS MGMT SWITCH      ##########
+  #############################################
+  - name: Create operations Distributed vSwitch - '{{ ops_dvs_switch_name }}'
+    community.vmware.vmware_dvswitch:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      datacenter: '{{ datacenter_name }}'
+      switch_name: '{{ ops_dvs_switch_name }}'
+      # The "vsphere_version" must match the version of the ESXi hosts you want to connect.
+      switch_version: '{{ vsphere_version }}'
+      # Quantity of uplink per ESXi host added to the Distributed Switch.
+      uplink_quantity: 1
+      discovery_protocol: cdp
+      discovery_operation: both
+      state: present
+
+  - name: Create DVS Uplink portgroup - "DVS-MGMT-Uplinks"
+    community.vmware.vmware_dvswitch_uplink_pg:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      switch: '{{ ops_dvs_switch_name }}'
+      name: DVS-MGMT-Uplinks
+      vlan_trunk_range:
+        - '0-4094'
+
+  - name: Add Hosts '{{ physical_nic_2 }}' to '{{ ops_dvs_switch_name }}' temporarily
+    community.vmware.vmware_dvs_host:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      switch_name: '{{ ops_dvs_switch_name }}'
+      vmnics:
+          - '{{ physical_nic_2 }}' # USB nic - temp
+      state: present
+    loop: "{{ groups['esxi'] }}"
+    # "ignore_errors: yes" is a way to allow re-running of the playbook
+    # it normally would fail due to an in-use nic after first run
+    # we're basically relying on an error to prevent the task from running
+    ignore_errors: yes
+
+  ############################################
+  #######   DVS MGMT PORTGROUPS     ##########
+  ############################################
+
+  - name: Create new Management Network port group on vlan 0 - "DVPG-Management Network"
+    community.vmware.vmware_dvs_portgroup:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      portgroup_name: "DVPG-Management Network"
+      switch_name: '{{ ops_dvs_switch_name }}'
+      vlan_id: 0
+      num_ports: 32
+      port_binding: static
+      state: present
+
+  - name: Create vMotion port group on vlan 5 - "DVPG-vMotion"
+    community.vmware.vmware_dvs_portgroup:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      portgroup_name: "DVPG-vMotion"
+      switch_name: '{{ ops_dvs_switch_name }}'
+      vlan_id: 5
+      num_ports: 32
+      port_binding: static
+      state: present
+
+  - name: Create storage portgroup on vlan 4 - "DVPG-Storage"
+    community.vmware.vmware_dvs_portgroup:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      portgroup_name: "DVPG-Storage"
+      switch_name: '{{ ops_dvs_switch_name }}'
+      vlan_id: 4
+      num_ports: 32
+      port_binding: static
+      state: present
+
+  ############################################
+  ######  CREATE VMKERNEL NICS (VMK)  ########
+  ############################################
+
+  # Creating vmk's allow ESXi to get multiple IPs/routes for each vlan without a VM
+  - name: Add vMotion "vmk1" VMKernel NIC
+    community.vmware.vmware_vmkernel:
+       hostname: '{{ vcenter_hostname }}'
+       username: '{{ vcenter_username }}'
+       password: '{{ vcenter_password }}'
+       validate_certs: false
+       esxi_hostname: '{{ hostvars[item].ansible_host }}'
+       dvswitch_name: '{{ ops_dvs_switch_name }}'
+       portgroup_name: "DVPG-vMotion"
+       # must be a vmk
+       device: '{{ vmk_vmotion }}'
+       network:
+         type: 'dhcp'
+         tcpip_stack: vmotion
+       state: present
+    loop: "{{ groups['esxi'] }}"
+
+  - name: Add storage "vmk2" VMKernel NIC
+    community.vmware.vmware_vmkernel:
+       hostname: '{{ vcenter_hostname }}'
+       username: '{{ vcenter_username }}'
+       password: '{{ vcenter_password }}'
+       validate_certs: false
+       esxi_hostname: '{{ hostvars[item].ansible_host }}'
+       dvswitch_name: '{{ ops_dvs_switch_name }}'
+       portgroup_name: "DVPG-Storage"
+       device: '{{ vmk_storage }}'
+       network:
+         type: 'dhcp'
+       state: present
+    loop: "{{ groups['esxi'] }}"
+
+  ############################################
+  ######   HANDLING MGMT (VMK0)     ##########
+  ############################################
+
+  # The MGMT vmk0 is hard to move since it's the port we use to communicate to ESXi over. Luckily this module handles it.
+  - name: Migrate Management "vmk0" to {{ ops_dvs_switch_name }}' vDS
+    community.vmware.vmware_migrate_vmk:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      device: vmk0
+      current_switch_name: vSwitch0
+      current_portgroup_name: "Management Network"
+      migrate_switch_name: '{{ ops_dvs_switch_name }}'
+      migrate_portgroup_name: "DVPG-Management Network"
+    loop: "{{ groups['esxi'] }}"
+
+  - name: Migrate VCSA to vDS to not disrupt VCSA
+    community.vmware.vmware_vm_vss_dvs_migrate:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      vm_name: "VMware vCenter Server"
+      dvportgroup_name: "DVPG-Management Network"
+
+  - name: Delete the default "vSwitch0" vSwitch to allow moving the '{{ physical_nic_1 }}' to '{{ ops_dvs_switch_name }}'
+    community.vmware.vmware_vswitch:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      switch_name: vSwitch0
+      state: absent
+    loop: "{{ groups['esxi'] }}"
+
+  #############################################
+  ###########   DVS VM SWITCH      ############
+  #############################################
+
+  - name: Creating VM Network Distributed vSwitch - '{{ vm_dvs_switch_name }}'
+    community.vmware.vmware_dvswitch:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      datacenter: '{{ datacenter_name }}'
+      switch_name: '{{ vm_dvs_switch_name }}'
+      switch_version: '{{ vsphere_version }}'
+      # Quantity of uplink per ESXi host added to the Distributed Switch.
+      uplink_quantity: 1
+      discovery_protocol: cdp
+      discovery_operation: both
+      state: present
+
+  - name: Create DVS Uplink portgroup - "DVS-VM-Uplinks"
+    community.vmware.vmware_dvswitch_uplink_pg:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      switch: '{{ vm_dvs_switch_name }}'
+      name: DVS-VM-Uplinks
+      vlan_trunk_range:
+        - '0-4094'
+
+  # NO HOSTS YET - WAITING FOR VUSB0 NIC
+
+  ############################################
+  #########   DVS VM PORTGROUPS     ##########
+  ############################################
+
+  - name: Create VM Network portgroup - "DVPG-VM Network"
+    community.vmware.vmware_dvs_portgroup:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      portgroup_name: "DVPG-VM Network"
+      switch_name: '{{ vm_dvs_switch_name }}'
+      vlan_id: 64
+      num_ports: 120
+      port_binding: static
+      state: present

@@ -1,0 +1,73 @@
+
+- hosts: localhost
+  gather_facts: false
+  tasks:
+
+  # ensure it's nfs or nfs4 - that is a tripping point.
+  # I found NFS to be very finicky overall and would recommend if at all possible to use iSCSI instead.
+  # I ran into issues like this: https://www.reddit.com/r/vmware/comments/dlc85v/nfs_datastore_appending_1_to_name_on_mountreboot/
+  # until I switched to v3
+  - name: Mounting NFS datastore '{{ nfs_server_ip }}' to all ESXi hosts
+    community.vmware.vmware_host_datastore:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: false
+        datastore_name: '{{ nfs_datastore_name }}'
+        datastore_type: '{{ nfs_datastore_type }}'
+        nfs_server: '{{ nfs_server_ip }}'
+        nfs_path: '{{ nfs_volume_path }}'
+        esxi_hostname: '{{ hostvars[item].ansible_host }}'
+        state: present
+    loop: "{{ groups['esxi'] }}"
+
+
+  - name: Enable iSCSI on all ESXi hosts
+    community.vmware.vmware_host_iscsi:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      state: enabled
+    loop: "{{ groups['esxi'] }}"
+
+
+  - name: Add a dynamic target to iSCSI config on all ESXi hosts
+    community.vmware.vmware_host_iscsi:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      iscsi_config:
+        vmhba_name: '{{ vmhba_name }}'
+        send_target:
+          address: "{{ send_target_address }}"
+      state: present
+    loop: "{{ groups['esxi'] }}"
+
+  - name: Add VMKernels to iSCSI config on all ESXi hosts
+    community.vmware.vmware_host_iscsi:
+      hostname: "{{ vcenter_hostname }}"
+      username: "{{ vcenter_username }}"
+      password: "{{ vcenter_password }}"
+      validate_certs: false
+      esxi_hostname: '{{ hostvars[item].ansible_host }}'
+      iscsi_config:
+        vmhba_name: '{{ vmhba_name }}'
+        # must be a vmk
+        port_bind:
+          - '{{ vmk_storage }}'
+      state: present
+    loop: "{{ groups['esxi'] }}"
+
+
+  - name: Rescan datastores for a given cluster - all found hosts will be scanned
+    community.vmware.vmware_host_scanhba:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        cluster_name: '{{ cluster_name }}'
+        validate_certs: false
+        refresh_storage: true
