@@ -7,6 +7,8 @@ all:
        ansible_host: UPDATE_WITH_IP_ADDRESS
      nuc-3:
        ansible_host: UPDATE_WITH_IP_ADDRESS
+     localhost:
+       #ansible_python_interpreter: "/opt/homebrew/opt/python@3.11/bin/python3.11"
   children:
     esxi:
       hosts:
