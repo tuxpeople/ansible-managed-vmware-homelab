@@ -62,7 +62,6 @@
       state: present
     loop: "{{ groups['esxi'] }}"
 
-
   - name: Rescan datastores for a given cluster - all found hosts will be scanned
     community.vmware.vmware_host_scanhba:
         hostname: '{{ vcenter_hostname }}'

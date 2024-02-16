@@ -57,10 +57,10 @@
       cluster_name: '{{ cluster_name }}'
       state: present
       ntp_servers:
-          - 0.pool.ntp.org
-          - 1.pool.ntp.org
-          - 2.pool.ntp.org
-          - 3.pool.ntp.org
+        - ntp11.metas.ch
+        - ntp12.metas.ch
+        - ntp13.metas.ch
+        - 0.pool.ntp.org
 
   - name: Disable IPv6 for all ESXi Hosts in '{{ cluster_name }}' cluster
     community.vmware.vmware_host_ipv6:
@@ -137,3 +137,14 @@
       cpu_reservation: 0
       cpu_expandable_reservations: true
       state: present
+
+  # - name: Enable EVC Mode '{{ evc_mode }}'
+  #   community.vmware.vmware_evc_mode:
+  #     hostname: '{{ vcenter_hostname }}'
+  #     username: '{{ vcenter_username }}'
+  #     password: '{{ vcenter_password }}'
+  #     validate_certs: false
+  #     datacenter_name: '{{ datacenter_name }}'
+  #     cluster_name: '{{ cluster_name }}'
+  #     evc_mode: '{{ evc_mode }}'
+  #     state: present

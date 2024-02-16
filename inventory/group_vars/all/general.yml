@@ -1,0 +1,69 @@
+ansible_user: root
+ansible_connection: ssh
+
+# only needed for the initial bootstrapping (it's used to SCP files to ESXi hosts)
+ansible_ssh_private_key_file: /Users/tdeutsch/.ssh/id_rsa
+
+# used for vDS configuration to match hosts ESXi (ex: 8.0.1)
+vsphere_version: 8.0.0
+
+vcenter_url: https://vcenter.lab.tdeutsch.ch
+vcenter_hostname: 192.168.8.10
+# (optional) used for ensuring the VCSA is on in `99-power-on-vcsa-vm.yml`
+vcenter_esxi_host: 192.168.8.14
+
+folder_name: "homelab_vms"
+resource_pool_name: "homelab_pool"
+
+datacenter_name: "SKY"
+cluster_name: "homelab-cluster"
+
+## NETWORKING
+
+# VLAN ID for DVPG-Management Network
+vlan_id_management: "0"
+
+# VLAN ID for DVPG-vMotion
+vlan_id_vmotion: "311"
+
+# VLAN ID for DVPG-Storage
+vlan_id_storage: "312"
+
+# VLAN ID for DVPG-VM Network
+vlan_id_vmnetwork: "313"
+
+# USB NIC driver fling (https://flings.vmware.com/usb-network-native-driver-for-esxi) - what file?
+source_usb_driver_zip: /Users/tdeutsch/Downloads/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
+# Where to copy it on each host / install?
+dest_usb_driver_zip: /scratch/tmp/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
+
+# Uplinks (ensure these match what you have! `esxcli network nic list`)
+physical_nic_1: "vmnic0"
+physical_nic_2: "vusb0"
+
+evc_mode: "intel-sandybridge"
+
+# !! vmk0 is taken by mgmt by default
+# Set vmk_vmotion for vmk creation
+vmk_vmotion: "vmk1"
+# vmk_storage is used for creation and iSCSI binding
+vmk_storage: "vmk2"
+
+# Networking config for 2 switches with 1 uplink / NIC each (2 per host).
+ops_dvs_switch_name: "Operation-VDS"
+
+# VM Traffic switch.
+vm_dvs_switch_name: "VM-VDS"
+
+# Storage - this is the iSCSI discovery IP. Ansible appends :3260
+send_target_address: 10.20.30.40
+# This defaults to vmhba64 and most likely doesn't need to change.
+# Confirm with: esxcli iscsi adapter list
+vmhba_name: "vmhba64"
+
+# nfs server details
+nfs_server_ip: 10.20.30.40
+nfs_volume_path: "/volume2/vsphere"
+# nfs or nfs41 - I found nfs41 to have issues on reboot due to file locking
+nfs_datastore_type: "nfs"
+nfs_datastore_name: "NFS"

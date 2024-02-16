@@ -41,7 +41,7 @@
       esxi_hostname: '{{ hostvars[item].ansible_host }}'
       switch_name: '{{ ops_dvs_switch_name }}'
       vmnics:
-          - '{{ physical_nic_2 }}' # USB nic - temp
+          - '{{ hostvars[item].physical_nic_2 }}' # USB nic - temp
       state: present
     loop: "{{ groups['esxi'] }}"
     # "ignore_errors: yes" is a way to allow re-running of the playbook
@@ -53,7 +53,7 @@
   #######   DVS MGMT PORTGROUPS     ##########
   ############################################
 
-  - name: Create new Management Network port group on vlan 0 - "DVPG-Management Network"
+  - name: Create new Management Network port group on vlan '{{ vlan_id_management }}' - "DVPG-Management Network"
     community.vmware.vmware_dvs_portgroup:
       hostname: '{{ vcenter_hostname }}'
       username: '{{ vcenter_username }}'
@@ -61,12 +61,12 @@
       validate_certs: false
       portgroup_name: "DVPG-Management Network"
       switch_name: '{{ ops_dvs_switch_name }}'
-      vlan_id: 0
+      vlan_id: '{{ vlan_id_management }}'
       num_ports: 32
       port_binding: static
       state: present
 
-  - name: Create vMotion port group on vlan 5 - "DVPG-vMotion"
+  - name: Create vMotion port group on vlan '{{ vlan_id_vmotion }}' - "DVPG-vMotion"
     community.vmware.vmware_dvs_portgroup:
       hostname: '{{ vcenter_hostname }}'
       username: '{{ vcenter_username }}'
@@ -74,12 +74,12 @@
       validate_certs: false
       portgroup_name: "DVPG-vMotion"
       switch_name: '{{ ops_dvs_switch_name }}'
-      vlan_id: 5
+      vlan_id: '{{ vlan_id_vmotion }}'
       num_ports: 32
       port_binding: static
       state: present
 
-  - name: Create storage portgroup on vlan 4 - "DVPG-Storage"
+  - name: Create storage portgroup on vlan '{{ vlan_id_storage }}' - "DVPG-Storage"
     community.vmware.vmware_dvs_portgroup:
       hostname: '{{ vcenter_hostname }}'
       username: '{{ vcenter_username }}'
@@ -87,7 +87,7 @@
       validate_certs: false
       portgroup_name: "DVPG-Storage"
       switch_name: '{{ ops_dvs_switch_name }}'
-      vlan_id: 4
+      vlan_id: '{{ vlan_id_storage }}'
       num_ports: 32
       port_binding: static
       state: present
@@ -212,7 +212,7 @@
       validate_certs: false
       portgroup_name: "DVPG-VM Network"
       switch_name: '{{ vm_dvs_switch_name }}'
-      vlan_id: 64
+      vlan_id: '{{ vlan_id_vmnetwork }}'
       num_ports: 120
       port_binding: static
       state: present

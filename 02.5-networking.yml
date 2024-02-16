@@ -26,6 +26,6 @@
       esxi_hostname: '{{ hostvars[item].ansible_host }}'
       switch_name: '{{ vm_dvs_switch_name }}'
       vmnics:
-          - '{{ physical_nic_2 }}'
+          - '{{ hostvars[item].physical_nic_2 }}'
       state: present
     loop: "{{ groups['esxi'] }}"

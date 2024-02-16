@@ -10,3 +10,23 @@
       validate_certs: false
       name: "VMware vCenter Server"
       state: powered-on
+
+  - name: Wait for VCSA to be available
+    uri:
+      url: "{{ vcenter_url }}"
+      return_content: yes
+      validate_certs: false
+    register: result
+    until: "'on-prem-documentation-link' in result.content"
+    retries: 20
+    delay: 30
+
+  - name: Wait for VCSA to be ready
+    uri:
+      url: "{{ vcenter_url }}/ui/"
+      return_content: yes
+      validate_certs: false
+    register: result
+    until: "'loading-container' in result.content"
+    retries: 20
+    delay: 30
