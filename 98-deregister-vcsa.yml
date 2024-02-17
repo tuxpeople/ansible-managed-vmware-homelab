@@ -1,0 +1,16 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+
+    - name: Register vCenter to inventory
+      community.vmware.vmware_guest_register_operation:
+        hostname: "{{ vcenter_esxi_host }}"
+        username: '{{ esxi_username }}'
+        password: '{{ esxi_password }}'
+        folder: "/ha-datacenter/vm"
+        esxi_hostname: "esx4.lab.tdeutsch.ch"
+        name: "VMware vCenter Server"
+        template: false
+        path: "[NFS] VMware\ vCenter\ Server/VMware\ vCenter\ Server.vmx"
+        state: absent
+        validate_certs: false

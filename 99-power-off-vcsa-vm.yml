@@ -10,3 +10,4 @@
       validate_certs: false
       name: "VMware vCenter Server"
       state: shutdown-guest
+      state_change_timeout: 200

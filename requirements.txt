@@ -1,0 +1,4 @@
+PyVmomi
+aiohttp
+setuptools
+git+https://github.com/vmware/vsphere-automation-sdk-python.git
