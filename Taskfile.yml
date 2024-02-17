@@ -1,0 +1,57 @@
+---
+version: "3"
+
+env:
+  ANSIBLE_CONFIG: "{{.ROOT_DIR}}/ansible.cfg"
+
+vars:
+  ANSIBLE_DIR: "{{.ROOT_DIR}}"
+  ANSIBLE_PLAYBOOK_DIR: "{{.ANSIBLE_DIR}}"
+  ANSIBLE_INVENTORY_DIR: "{{.ANSIBLE_DIR}}/inventory"
+
+includes:
+  vcsa: .taskfiles/VCSATasks.yml
+  esxi: .taskfiles/ESXiTasks.yml
+  cluster: .taskfiles/clusterTasks.yml
+
+tasks:
+  init:
+    desc: Install / Upgrade Ansible galaxy deps
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - python3 -m pip install --user --requirement requirements.txt
+      - ansible-galaxy install -r requirements.yml --roles-path ~/.ansible/roles --force
+      - ansible-galaxy collection install -r requirements.yml --collections-path ~/.ansible/collections --force
+      - python3 -m pip install --user --requirement ~/.ansible/collections/ansible_collections/community/vmware/requirements.txt
+
+  list:
+    desc: List all the hosts
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --list-hosts
+
+  ping:
+    desc: Ping all the hosts
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - task: esxi:enable-SSH
+      - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --one-line -m 'ping'
+
+  uptime:
+    desc: Uptime of all the hosts
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - task: esxi:enable-SSH
+      - ansible all -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml --one-line -a 'uptime'
+
+  force-reboot:
+    desc: Reboot all the hosts
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - task: esxi:reboot-all
+
+  force-poweroff:
+    desc: Shutdown all the hosts
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - task: esxi:shutdown-all

@@ -1,0 +1,39 @@
+---
+version: "3"
+
+tasks:
+  reboot-all:
+    desc: Reboot all ESXi
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/99-reboot-all-hosts.yml
+
+  backup-all:
+    desc: Backup all ESXi
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/98-backup.yml
+
+  restore-basesetup:
+    desc: Restore all ESXi to base setup
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/98-restore-basesetup.yml
+
+  shutdown-all:
+    desc: Shutdown all ESXi
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/99-shutdown-all-hosts.yml
+
+  enable-SSH:
+    desc: Enable SSH on all ESXi
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/99-enable-ssh.yml
+
+  disable-SSH:
+    desc: Disable SSH on all ESXi
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/99-disable-ssh.yml

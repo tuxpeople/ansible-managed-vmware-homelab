@@ -1,0 +1,27 @@
+---
+version: "3"
+
+tasks:
+  register:
+    desc: Register VCSA
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/98-register-vcsa.yml
+
+  deregister:
+    desc: De-Register VCSA
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/98-deregister-vcsa.yml
+
+  power-on:
+    desc: Power-on VCSA
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/99-power-on-vcsa-vm.yml
+
+  power-off:
+    desc: Power-off VCSA
+    dir: "{{.ANSIBLE_DIR}}"
+    cmds:
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/99-power-off-vcsa-vm.yml
