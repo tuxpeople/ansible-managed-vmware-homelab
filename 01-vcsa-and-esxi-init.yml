@@ -23,7 +23,6 @@
       state: present
       validate_certs: false
 
-
   - name: Create Cluster - '{{ cluster_name }}'
     community.vmware.vmware_cluster:
       hostname: '{{ vcenter_hostname }}'
@@ -33,6 +32,16 @@
       cluster_name: '{{ cluster_name }}'
       validate_certs: false
 
+  - name: Enable EVC Mode '{{ evc_mode }}'
+    community.vmware.vmware_evc_mode:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: false
+      datacenter_name: '{{ datacenter_name }}'
+      cluster_name: '{{ cluster_name }}'
+      evc_mode: '{{ evc_mode }}'
+      state: present
 
   - name: Add ESXi Host(s) to vCenter
     community.vmware.vmware_host:
@@ -46,7 +55,7 @@
       esxi_password: '{{ esxi_password }}'
       state: present
       validate_certs: false
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
 
   - name: Set NTP servers for all ESXi Hosts in '{{ cluster_name }}' cluster
     community.vmware.vmware_host_ntp:
@@ -137,14 +146,3 @@
       cpu_reservation: 0
       cpu_expandable_reservations: true
       state: present
-
-  # - name: Enable EVC Mode '{{ evc_mode }}'
-  #   community.vmware.vmware_evc_mode:
-  #     hostname: '{{ vcenter_hostname }}'
-  #     username: '{{ vcenter_username }}'
-  #     password: '{{ vcenter_password }}'
-  #     validate_certs: false
-  #     datacenter_name: '{{ datacenter_name }}'
-  #     cluster_name: '{{ cluster_name }}'
-  #     evc_mode: '{{ evc_mode }}'
-  #     state: present

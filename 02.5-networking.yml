@@ -14,7 +14,7 @@
       vmnics:
           - '{{ physical_nic_1 }}'
       state: present
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
 
   # This is final state so I let it run no matter what.
   - name: Add Hosts '{{ physical_nic_2 }}' to '{{ vm_dvs_switch_name }}'
@@ -28,4 +28,4 @@
       vmnics:
           - '{{ hostvars[item].physical_nic_2 }}'
       state: present
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"

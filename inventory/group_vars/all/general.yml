@@ -67,3 +67,5 @@ nfs_volume_path: "/volume2/vsphere"
 # nfs or nfs41 - I found nfs41 to have issues on reboot due to file locking
 nfs_datastore_type: "nfs"
 nfs_datastore_name: "NFS"
+
+esx_backup_dir: "{{ playbook_dir }}/backup/"

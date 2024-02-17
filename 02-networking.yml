@@ -43,7 +43,7 @@
       vmnics:
           - '{{ hostvars[item].physical_nic_2 }}' # USB nic - temp
       state: present
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
     # "ignore_errors: yes" is a way to allow re-running of the playbook
     # it normally would fail due to an in-use nic after first run
     # we're basically relying on an error to prevent the task from running
@@ -112,7 +112,7 @@
          type: 'dhcp'
          tcpip_stack: vmotion
        state: present
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
 
   - name: Add storage "vmk2" VMKernel NIC
     community.vmware.vmware_vmkernel:
@@ -127,7 +127,7 @@
        network:
          type: 'dhcp'
        state: present
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
 
   ############################################
   ######   HANDLING MGMT (VMK0)     ##########
@@ -146,7 +146,7 @@
       current_portgroup_name: "Management Network"
       migrate_switch_name: '{{ ops_dvs_switch_name }}'
       migrate_portgroup_name: "DVPG-Management Network"
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
 
   - name: Migrate VCSA to vDS to not disrupt VCSA
     community.vmware.vmware_vm_vss_dvs_migrate:
@@ -166,7 +166,7 @@
       esxi_hostname: '{{ hostvars[item].ansible_host }}'
       switch_name: vSwitch0
       state: absent
-    loop: "{{ groups['esxi'] }}"
+    loop: "{{ groups['clusterhosts'] }}"
 
   #############################################
   ###########   DVS VM SWITCH      ############

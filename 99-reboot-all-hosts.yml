@@ -15,3 +15,14 @@
     loop: "{{ groups['esxi'] }}"
     run_once: true # no need to do for each host
     delegate_to: localhost
+
+  - name: ESXi wait for the reboot to complete
+    ansible.builtin.wait_for:
+      host: '{{ hostvars[item].ansible_host }}'
+      port: 443
+      delay: 5
+      state: started
+      timeout: 3600
+    loop: "{{ groups['esxi'] }}"
+    run_once: true # no need to do for each host
+    delegate_to: localhost
