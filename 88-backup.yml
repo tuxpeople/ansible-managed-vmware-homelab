@@ -1,0 +1,18 @@
+- hosts: esxi
+  gather_facts: true
+  tasks:
+    - name: Save the ESXi configuration locally by authenticating directly against the ESXi host
+      community.vmware.vmware_cfg_backup:
+        hostname: '{{ hostvars[item].ansible_host }}'
+        username: "{{ esxi_username }}"
+        password: "{{ esxi_password }}"
+        validate_certs: false
+        state: saved
+        dest: "{{ esx_backup_dir }}/esx-backup-{{ hostvars[item]['ansible_facts']['nodename'] }}-{{ ansible_date_time.iso8601_basic_short }}.tgz"
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    # - name: Print all available facts
+    #   ansible.builtin.debug:
+    #     var: ansible_facts

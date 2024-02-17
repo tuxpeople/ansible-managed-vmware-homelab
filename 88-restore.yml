@@ -1,0 +1,72 @@
+- hosts: esxi
+  gather_facts: true
+  tasks:
+
+    - name: Restore the ESXi configuration
+      community.vmware.vmware_cfg_backup:
+        hostname: '{{ hostvars[item].ansible_host }}'
+        username: "{{ esxi_username }}"
+        password: "{{ esxi_password }}"
+        validate_certs: false
+        state: loaded
+        src: "{{ esx_backup_dir }}/esx-backup-{{ hostvars[item]['ansible_facts']['nodename'] }}-grundsetup.tgz"
+      ignore_errors: True
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    - name: ESXi wait for the reboot to complete
+      ansible.builtin.wait_for:
+        host: '{{ hostvars[item].ansible_host }}'
+        port: 443
+        delay: 5
+        state: started
+        timeout: 3600
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    - name: Start SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: '{{ hostvars[item].ansible_host }}'
+        hostname: '{{ hostvars[item].ansible_host }}'
+        username: '{{ esxi_username }}'
+        password: '{{ esxi_password }}'
+        validate_certs: false
+        service_name: TSM-SSH
+        state: present
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    - name: Update ESXi ssh host key in known hosts file
+      ansible.builtin.shell: "~/iCloudDrive/Allgemein/bin//fix-ssh-key {{ hostvars[item].ansible_host }}" 
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    - name: Stop SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: '{{ hostvars[item].ansible_host }}'
+        hostname: '{{ hostvars[item].ansible_host }}'
+        username: '{{ esxi_username }}'
+        password: '{{ esxi_password }}'
+        validate_certs: false
+        service_name: TSM-SSH
+        state: absent
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    - name: Register vCenter to inventory
+      community.vmware.vmware_guest_register_operation:
+        hostname: "{{ vcenter_esxi_host }}"
+        username: '{{ esxi_username }}'
+        password: '{{ esxi_password }}'
+        datacenter: "{{ datacenter }}"
+        #folder: "/vm"
+        esxi_hostname: "{{ vcenter_esxi_host }}"
+        name: "VMware vCenter Server"
+        template: false
+        path: "[datastore14_ssd] VMware\ vCenter\ Server/VMware\ vCenter\ Server.vmx"
+        state: present
