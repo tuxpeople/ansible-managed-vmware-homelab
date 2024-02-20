@@ -38,9 +38,10 @@
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         iscsi_config:
           vmhba_name: "{{ nas.vmhba_name }}"
-          send_target:
-            # iscsi_name: "{{ nas.iscsi_target }}"
-            address: "{{ send_target_address }}"
+          # send_target:
+          static_target:
+            iscsi_name: "{{ nas.iscsi_target }}"
+            address: "{{ nas.server_ip }}"
         state: present
       loop: "{{ groups['clusterhosts'] }}"
 

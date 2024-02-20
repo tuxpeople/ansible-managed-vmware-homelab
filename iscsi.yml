@@ -1,0 +1,27 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: refresh
+      community.vmware.vmware_host_scanhba:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        refresh_storage: true
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Gather all iscsi
+      community.vmware.vmware_host_disk_info:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      register: iscsi_info
+
+    - debug:
+        var: iscsi_info
