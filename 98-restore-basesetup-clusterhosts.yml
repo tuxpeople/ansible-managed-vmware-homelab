@@ -1,0 +1,83 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Remove ESXi Host(s) from vCenter
+      community.vmware.vmware_host:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster }}"
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        esxi_username: "{{ esxi.username }}"
+        esxi_password: "{{ esxi.password }}"
+        state: absent
+        validate_certs: false
+      loop: "{{ groups['clusterhosts'] }}"
+      ignore_errors: True
+
+    - name: Restore the ESXi configuration
+      community.vmware.vmware_cfg_backup:
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        state: loaded
+        src: "{{ esxi.backup.dir }}/esx-backup-{{ hostvars[item]['ansible_facts']['nodename'] }}-grundsetup.tgz"
+      ignore_errors: True
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: ESXi wait for the reboot to complete
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[item].ansible_host }}"
+        port: 443
+        delay: 5
+        state: started
+        timeout: 3600
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Start SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: present
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Update ESXi ssh host key in known hosts file
+      ansible.builtin.shell: "~/iCloudDrive/Allgemein/bin//fix-ssh-key {{ hostvars[item].ansible_host }}"
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Stop SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: absent
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Remove ESXi Host(s) from vCenter
+      community.vmware.vmware_host:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster }}"
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        esxi_username: "{{ esxi.username }}"
+        esxi_password: "{{ esxi.password }}"
+        state: absent
+        validate_certs: false
+      loop: "{{ groups['clusterhosts'] }}"
+      ignore_errors: True

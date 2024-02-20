@@ -1,0 +1,32 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Gather all registered virtual machines
+      community.vmware.vmware_vm_info:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+      delegate_to: localhost
+      register: vm_info
+
+    - debug:
+        var: info
+      vars:
+        info: "{{ vm_info.virtual_machines|
+                rejectattr('guest_name', 'eq', 'VMware vCenter Server')|
+                map(attribute='guest_name') }}"
+
+    - name: Set the state of a virtual machine to poweroff excedpt for VMware vCenter Server 
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        name: "{{ item }}"
+        state: powered-off
+      delegate_to: localhost
+      register: deploy
+      loop: "{{ vm_info.virtual_machines|
+                rejectattr('guest_name', 'eq', 'VMware vCenter Server')|
+                map(attribute='guest_name') }}"

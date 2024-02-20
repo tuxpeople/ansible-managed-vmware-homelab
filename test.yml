@@ -1,0 +1,41 @@
+- hosts: localhost
+  gather_facts: false
+  become: false
+
+  tasks:
+  - name: Print return information from the previous task
+    ansible.builtin.debug:
+      var: vcenter
+
+  - name: Mount ISO
+    ansible.builtin.shell: "hdiutil mount -mountpoint {{ vcenter.deployment.mount_path }} {{ vcenter.deployment.iso }}"
+
+  - name: Create vCenter JSON configuration
+    ansible.builtin.template:
+      src: templates/deploy.j2
+      dest: /tmp/deploy.json
+    delegate_to: localhost
+
+  - name: Create installer log directory
+    file:
+      path: /tmp/vcsa-deploy-logs
+      state: directory
+
+  - name: Make sure VM Network has vlan configured
+    community.vmware.vmware_portgroup:
+      hostname: "{{ vcenter.host }}"
+      username: "{{ esxi.username }}"
+      password: "{{ esxi.password }}"
+      hosts: "{{ vcenter.host }}"
+      switch: "vSwitch0"
+      portgroup: "{{ vcenter.deployment.port_group }}"
+      vlan_id: "308"
+      validate_certs: false
+
+  - name: Run vCSA installer
+    ansible.builtin.shell:
+      cmd: ./vcsa-deploy install --accept-eula --acknowledge-ceip --no-ssl-certificate-verification --log-dir /tmp/vcsa-deploy-logs /tmp/deploy.json
+      chdir: "{{ vcenter.deployment.mount_path }}/vcsa-cli-installer/mac"
+
+  - name: Unount ISO
+    ansible.builtin.shell: "hdiutil eject {{ vcenter.deployment.mount_path }}"

@@ -1,15 +1,14 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-  
-  # SSH is set to disable on reboot, which I like, but I don't like manually enabling the service when needed.
-  - name: Stop SSH service setting for all ESXi Hosts
-    community.vmware.vmware_host_service_manager:
-      esxi_hostname: '{{ hostvars[item].ansible_host }}'
-      hostname: '{{ hostvars[item].ansible_host }}'
-      username: '{{ esxi_username }}'
-      password: '{{ esxi_password }}'
-      validate_certs: false
-      service_name: TSM-SSH
-      state: absent
-    loop: "{{ groups['esxi'] }}"
+    # SSH is set to disable on reboot, which I like, but I don't like manually enabling the service when needed.
+    - name: Stop SSH service setting for all ESXi Hosts
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: absent
+      loop: "{{ groups['esxi'] }}"

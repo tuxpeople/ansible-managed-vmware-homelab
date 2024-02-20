@@ -6,27 +6,27 @@ tasks:
     desc: Shutdown anything
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
-      - task: vcsa:power-off
-      - task: esxi:shutdown-all
+      - task: :vcsa:power-off
+      - task: :esxi:shutdown-all
 
   nuke:
     desc: Clean up the lab without building the cluster
     dir: "{{.ANSIBLE_DIR}}"
     interactive: true
     cmds:
-      - task: vcsa:power-off
-      - task: vcsa:deregister
-      - task: esxi:enable-SSH
-      - task: esxi:restore-basesetup
+      #- task: vcsa:power-off
+      #- task: vcsa:deregister
+      - task: :esxi:enable-SSH
+      - task: :esxi:restore-basesetup
 
   setup:
     desc: Setup the cluster
     dir: "{{.ANSIBLE_DIR}}"
     interactive: true
     cmds:
-      - task: cluster:init
-      - task: cluster:networking
-      - task: cluster:storage
+      - task: :cluster:init
+      - task: :cluster:networking
+      - task: :cluster:storage
 
   reset:
     desc: Rebuild the lab and setup the cluster

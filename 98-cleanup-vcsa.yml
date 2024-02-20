@@ -1,22 +1,21 @@
 - hosts: localhost
   gather_facts: false
   tasks:
+    - name: Delete Cluster - '{{ vcenter.cluster }}'
+      community.vmware.vmware_cluster:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter_name: "{{ vcenter.datacenter }}"
+        cluster_name: "{{ vcenter.cluster }}"
+        state: absent
+        validate_certs: false
 
-  - name: Delete Cluster - '{{ cluster_name }}'
-    community.vmware.vmware_cluster:
-      hostname: '{{ vcenter_hostname }}'
-      username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
-      datacenter_name: '{{ datacenter_name }}'
-      cluster_name: '{{ cluster_name }}'
-      state: absent
-      validate_certs: false
-
-  - name: Delete Datacenter - '{{ datacenter_name }}'
-    community.vmware.vmware_datacenter:
-      hostname: '{{ vcenter_hostname }}'
-      username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
-      datacenter_name: '{{ datacenter_name }}'
-      state: absent
-      validate_certs: false
+    - name: Delete Datacenter - '{{ vcenter.datacenter }}'
+      community.vmware.vmware_datacenter:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter_name: "{{ vcenter.datacenter }}"
+        state: absent
+        validate_certs: false
