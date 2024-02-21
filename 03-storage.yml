@@ -91,7 +91,7 @@
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
         password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        esxi_hostname: "{{ groups['esxi'][0][ansible_host] }}"
+        esxi_hostname: "{{ hostvars[groups['clusterhosts'][0]].ansible_host }}"
         datastore_name: "{{ nas.iscsi.datastore_name }}"
         datastore_type: "{{ nas.iscsi.datastore_type }}"
         vmfs_device_name: "{{ iscsi_names[0][0][0] }}"
