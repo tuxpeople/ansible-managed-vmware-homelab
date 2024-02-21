@@ -50,14 +50,18 @@ physical_nic_2: "vusb0"
 # nfs server details
 nas:
   server_ip: 10.20.30.40
-  volume_path: "/volume2/vsphere"
-  # nfs or nfs41 - nfs41 may have issues on reboot due to file locking
-  datastore_type: "nfs"
-  datastore_name: "NFS"
-  iscsi_target: iqn.2000-01.com.synology:thiazi.Target-1.5a80e3dd780
-  # This defaults to vmhba64 and most likely doesn't need to change.
-  # Confirm with: esxcli iscsi adapter list
-  vmhba_name: "vmhba64"
+  nfs:
+    volume_path: "/volume2/vsphere"
+    # nfs or nfs41 - nfs41 may have issues on reboot due to file locking
+    datastore_type: "nfs"
+    datastore_name: "NFS"
+  iscsi:
+    target: iqn.2000-01.com.synology:thiazi.Target-1.5a80e3dd780
+    # This defaults to vmhba64 and most likely doesn't need to change.
+    # Confirm with: esxcli iscsi adapter list
+    vmhba_name: "vmhba64"
+    datastore_type: "vmfs"
+    datastore_name: "iSCSI"
 
 vcenter:
   hostname: 192.168.8.10

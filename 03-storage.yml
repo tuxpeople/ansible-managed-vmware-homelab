@@ -11,10 +11,10 @@
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
         password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        datastore_name: "{{ nas.datastore_name }}"
-        datastore_type: "{{ nas.datastore_type }}"
+        datastore_name: "{{ nas.nfs.datastore_name }}"
+        datastore_type: "{{ nas.nfs.datastore_type }}"
         nfs_server: "{{ nas.server_ip }}"
-        nfs_path: "{{ nas.volume_path }}"
+        nfs_path: "{{ nas.nfs.volume_path }}"
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         state: present
       loop: "{{ groups['esxi'] }}"
@@ -37,10 +37,10 @@
         validate_certs: false
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         iscsi_config:
-          vmhba_name: "{{ nas.vmhba_name }}"
+          vmhba_name: "{{ nas.iscsi.vmhba_name }}"
           # send_target:
           static_target:
-            iscsi_name: "{{ nas.iscsi_target }}"
+            iscsi_name: "{{ nas.iscsi.target }}"
             address: "{{ nas.server_ip }}"
         state: present
       loop: "{{ groups['clusterhosts'] }}"
@@ -53,7 +53,7 @@
         validate_certs: false
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         iscsi_config:
-          vmhba_name: "{{ nas.vmhba_name }}"
+          vmhba_name: "{{ nas.iscsi.vmhba_name }}"
           # must be a vmk
           port_bind:
             - "{{ vmk_storage }}"
@@ -68,3 +68,31 @@
         cluster_name: "{{ vcenter.cluster }}"
         validate_certs: false
         refresh_storage: true
+
+    - name: Gather iSCSI configuration information of ESXi host
+      community.vmware.vmware_host_disk_info:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+      delegate_to: localhost
+      loop: "{{ groups['clusterhosts'] }}"
+      register: iscsi_info
+
+    - set_fact:
+        iscsi_names: "{{ iscsi_info | json_query(query)}}"
+      vars:
+        query: "results[*].hosts_disk_info.*[?device_ctd_list[0] == `vmhba64:C0:T0:L1`].canonical_name"
+
+    - name: Mount iSCSI datastore
+      community.vmware.vmware_host_datastore:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        esxi_hostname: "{{ groups['esxi'][0][ansible_host] }}"
+        datastore_name: "{{ nas.iscsi.datastore_name }}"
+        datastore_type: "{{ nas.iscsi.datastore_type }}"
+        vmfs_device_name: "{{ iscsi_names[0][0][0] }}"
+        state: present
