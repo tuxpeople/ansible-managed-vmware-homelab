@@ -41,15 +41,12 @@ ops_dvs_switch_name: "Operation-VDS"
 # VM Traffic switch.
 vm_dvs_switch_name: "VM-VDS"
 
-# Storage - this is the iSCSI discovery IP. Ansible appends :3260
-send_target_address: 10.20.30.40
-
 physical_nic_1: "vmnic0"
 physical_nic_2: "vusb0"
 
 # nfs server details
 nas:
-  server_ip: 10.20.30.40
+  server_ip: 192.168.12.12
   nfs:
     volume_path: "/volume2/vsphere"
     # nfs or nfs41 - nfs41 may have issues on reboot due to file locking
