@@ -1,6 +1,21 @@
 - hosts: localhost
   gather_facts: false
   tasks:
+    - name: Remove ESXi Host(s) from vCenter
+      community.vmware.vmware_host:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster }}"
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        esxi_username: "{{ esxi.username }}"
+        esxi_password: "{{ esxi.password }}"
+        state: absent
+        validate_certs: false
+      loop: "{{ groups['clusterhosts'] }}"
+      ignore_errors: True
+
     - name: Delete Cluster - '{{ vcenter.cluster }}'
       community.vmware.vmware_cluster:
         hostname: "{{ vcenter.hostname }}"
@@ -11,11 +26,11 @@
         state: absent
         validate_certs: false
 
-    - name: Delete Datacenter - '{{ vcenter.datacenter }}'
-      community.vmware.vmware_datacenter:
-        hostname: "{{ vcenter.hostname }}"
-        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
-        password: "{{ vcenter.sso_password }}"
-        datacenter_name: "{{ vcenter.datacenter }}"
-        state: absent
-        validate_certs: false
+    # - name: Delete Datacenter - '{{ vcenter.datacenter }}'
+    #   community.vmware.vmware_datacenter:
+    #     hostname: "{{ vcenter.hostname }}"
+    #     username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+    #     password: "{{ vcenter.sso_password }}"
+    #     datacenter_name: "{{ vcenter.datacenter }}"
+    #     state: absent
+    #     validate_certs: false

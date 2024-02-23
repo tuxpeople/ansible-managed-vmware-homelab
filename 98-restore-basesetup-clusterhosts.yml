@@ -1,6 +1,48 @@
 - hosts: localhost
   gather_facts: false
   tasks:
+    - name: Start SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: present
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Gather facts from cluster nodes
+      ansible.builtin.setup:
+      delegate_to: "{{ item }}"
+      delegate_facts: true
+      loop: "{{ groups['clusterhosts'] }}"
+
+    - name: Gather all registered virtual machines
+      community.vmware.vmware_vm_info:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Set the state of a virtual machine to poweroff excedpt for VMware vCenter Server 
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        name: "{{ item }}"
+        state: powered-off
+      delegate_to: localhost
+      register: deploy
+      loop: "{{ vm_info.virtual_machines|
+                selectattr('power_state', 'eq', 'poweredOn')|
+                rejectattr('guest_name', 'eq', 'VMware vCenter Server')|
+                map(attribute='guest_name') }}"
+
     - name: Remove ESXi Host(s) from vCenter
       community.vmware.vmware_host:
         hostname: "{{ vcenter.hostname }}"
@@ -66,18 +108,3 @@
         state: absent
       loop: "{{ groups['clusterhosts'] }}"
       run_once: true # no need to do for each host
-
-    - name: Remove ESXi Host(s) from vCenter
-      community.vmware.vmware_host:
-        hostname: "{{ vcenter.hostname }}"
-        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
-        password: "{{ vcenter.sso_password }}"
-        datacenter: "{{ vcenter.datacenter }}"
-        cluster: "{{ vcenter.cluster }}"
-        esxi_hostname: "{{ hostvars[item].ansible_host }}"
-        esxi_username: "{{ esxi.username }}"
-        esxi_password: "{{ esxi.password }}"
-        state: absent
-        validate_certs: false
-      loop: "{{ groups['clusterhosts'] }}"
-      ignore_errors: True
