@@ -35,5 +35,6 @@ tasks:
     cmds:
       - task: :esxi:reboot-all
       - task: :vcsa:power-on
+      - task: :vcsa:clean-up
       - task: nuke
       - task: setup
