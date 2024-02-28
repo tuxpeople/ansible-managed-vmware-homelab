@@ -31,7 +31,7 @@
         vlan_trunk_range:
           - "0-4094"
 
-    - name: Add Hosts '{{ physical_nic_2 }}' to '{{ ops_dvs_switch_name }}' temporarily
+    - name: Add Hosts secondary NIC to '{{ ops_dvs_switch_name }}' temporarily
       community.vmware.vmware_dvs_host:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"

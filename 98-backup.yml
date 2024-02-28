@@ -1,7 +1,7 @@
 - hosts: esxi
   gather_facts: true
   tasks:
-    - name: Save the ESXi configuration locally by authenticating directly against the ESXi host
+    - name: Save the ESXi configuration locally
       community.vmware.vmware_cfg_backup:
         hostname: "{{ hostvars[item].ansible_host }}"
         username: "{{ esxi.username }}"

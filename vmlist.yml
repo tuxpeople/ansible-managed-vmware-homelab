@@ -17,7 +17,7 @@
                 rejectattr('guest_name', 'eq', 'VMware vCenter Server')|
                 map(attribute='guest_name') }}"
 
-    - name: Set the state of a virtual machine to poweroff excedpt for VMware vCenter Server 
+    - name: tbd
       community.vmware.vmware_guest_powerstate:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"

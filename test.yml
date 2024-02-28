@@ -3,10 +3,6 @@
   become: false
 
   tasks:
-  - name: Print return information from the previous task
-    ansible.builtin.debug:
-      var: vcenter
-
   - name: Mount ISO
     ansible.builtin.shell: "hdiutil mount -mountpoint {{ vcenter.deployment.mount_path }} {{ vcenter.deployment.iso }}"
 

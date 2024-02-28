@@ -2,7 +2,7 @@
   gather_facts: false
   tasks:
     # This is final state so I let it run no matter what.
-    - name: Replace hosts physical nic with '{{ physical_nic_1 }}' on VDS '{{ ops_dvs_switch_name }}'
+    - name: Replace hosts physical nic with primary NIC on VDS '{{ ops_dvs_switch_name }}'
       community.vmware.vmware_dvs_host:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
@@ -16,7 +16,7 @@
       loop: "{{ groups['clusterhosts'] }}"
 
     # This is final state so I let it run no matter what.
-    - name: Add Hosts '{{ physical_nic_2 }}' to '{{ vm_dvs_switch_name }}'
+    - name: Add Hosts secondary NIC to '{{ vm_dvs_switch_name }}'
       community.vmware.vmware_dvs_host:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"

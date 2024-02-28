@@ -2,7 +2,7 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-    - name: Create Local Content Library
+    - name: Create local content library for OS images
       community.vmware.vmware_content_library_manager:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
@@ -14,7 +14,7 @@
         datastore_name: "{{ nas.nfs.datastore_name }}"
         state: present
 
-    - name: Create a VM folder on given datacenter
+    - name: Create a VM folder for templates on datacenter  "{{ vcenter.datacenter }}"
       community.vmware.vcenter_folder:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
@@ -26,7 +26,7 @@
         state: present
       register: vm_folder_creation_result
 
-    - name: Register VM in Cluster
+    - name: Register a template in cluster "{{ vcenter.cluster }}"
       community.vmware.vmware_guest_register_operation:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"

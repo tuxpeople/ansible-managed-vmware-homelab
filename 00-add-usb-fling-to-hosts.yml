@@ -1,11 +1,6 @@
 - hosts: esxi
   gather_facts: false
 
-  vars_prompt:
-    - name: "reboot_prompt_response"
-      prompt: "After installing the USB NIC drivers fling, do you want to reboot all hosts (yes/no)?"
-      private: no
-
   tasks:
     # ensure SSH is enabled (ansible-playbook 99-enable-ssh.yml)
     - name: Start SSH service setting for all ESXi Hosts
@@ -42,4 +37,3 @@
       loop: "{{ groups['esxi'] }}"
       run_once: true # no need to do for each host
       delegate_to: localhost
-      when: reboot_prompt_response | bool # validates yes/no to T/F

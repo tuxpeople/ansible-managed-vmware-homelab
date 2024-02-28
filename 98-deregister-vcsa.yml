@@ -1,7 +1,7 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-    - name: Register vCenter to inventory
+    - name: De-register vCenter to inventory
       community.vmware.vmware_guest_register_operation:
         hostname: "{{ vcenter.host }}"
         username: "{{ esxi.username }}"
