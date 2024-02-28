@@ -99,3 +99,5 @@ esxi:
     - ntp12.metas.ch
     - ntp13.metas.ch
     - 0.pool.ntp.org
+
+vm_name: ubuntu-mantic-23.10-cloudimg

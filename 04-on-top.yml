@@ -2,60 +2,40 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-    # create a folder for anthos
-    - name: Create a VM folder on given datacenter
-      community.vmware.vcenter.folder:
+    - name: Create Local Content Library
+      community.vmware.vmware_content_library_manager:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
         password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        datacenter_name: "{{ vcenter.datacenter }}"
-        folder_name: "{{ folder_name }}"
-        folder_type: vm
+        library_name: os-images
+        library_description: 'Library with OS images'
+        library_type: local
+        datastore_name: "{{ nas.nfs.datastore_name }}"
         state: present
 
-    # register datastore information for future usage / looping regex names
-    #- name: System & Storage | Gather datastore facts
-    #  community.vmware.vmware_datastore_info:
-    #    hostname: '{{ vcenter.hostname }}'
-    #    username: '{{ vcenter.username }}@{{ vcenter.domain }}'
-    #    password: '{{ vcenter.sso_password }}'
-    #    validate_certs: false
-    #    datacenter_name: '{{ vcenter.datacenter }}'
-    #    properties:
-    #      - name
-    #      - type
-    #  register: info
-
-    # Assumes that each datastore is in order of hosts (lowest to highest)
-    - name: Rename local VMFS "datastore1" to "esxi-1-local-nvme"
-      community.vmware.vmware_object_rename:
+    - name: Create a VM folder on given datacenter
+      community.vmware.vcenter_folder:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
         password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        new_name: "esxi-1-local-nvme"
-        object_name: "datastore1"
-        object_type: "Datastore"
+        datacenter_name:  "{{ vcenter.datacenter }}"
+        folder_name: templates
+        folder_type: vm
+        state: present
+      register: vm_folder_creation_result
 
-    # Assumes that each datastore is in order of hosts (lowest to highest)
-    - name: Rename local VMFS "datastore1 (1)" to "esxi-2-local-nvme"
-      community.vmware.vmware_object_rename:
+    - name: Register VM in Cluster
+      community.vmware.vmware_guest_register_operation:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
         password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        new_name: "esxi-2-local-nvme"
-        object_name: "datastore1 (1)"
-        object_type: "Datastore"
-
-    # Assumes that each datastore is in order of hosts (lowest to highest)
-    - name: Rename local VMFS "datastore1 (2)" to "esxi-3-local-nvme"
-      community.vmware.vmware_object_rename:
-        hostname: "{{ vcenter.hostname }}"
-        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
-        password: "{{ vcenter.sso_password }}"
-        validate_certs: false
-        new_name: "esxi-3-local-nvme"
-        object_name: "datastore1 (2)"
-        object_type: "Datastore"
+        datacenter:  "{{ vcenter.datacenter }}"
+        folder: "/vm/templates"
+        cluster: "{{ vcenter.cluster }}"
+        name: "{{ vm_name }}"
+        template: true
+        path: "[NFS] templates/{{ vm_name }}/{{ vm_name }}.vmtx"
+        state: present

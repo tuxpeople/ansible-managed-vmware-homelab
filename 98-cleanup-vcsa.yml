@@ -34,3 +34,17 @@
     #     datacenter_name: "{{ vcenter.datacenter }}"
     #     state: absent
     #     validate_certs: false
+
+    - name: Unmounting NFS datastore '{{ nas.server_ip }}' to all ESXi hosts
+      community.vmware.vmware_host_datastore:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        datastore_name: "{{ nas.nfs.datastore_name }}"
+        datastore_type: "{{ nas.nfs.datastore_type }}"
+        nfs_server: "{{ nas.server_ip }}"
+        nfs_path: "{{ nas.nfs.volume_path }}"
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        state: absent
+      loop: "{{ groups['esxi'] }}"

@@ -27,6 +27,7 @@ tasks:
       - task: :cluster:init
       - task: :cluster:networking
       - task: :cluster:storage
+      - task: :cluster:various
 
   reset:
     desc: Rebuild the lab and setup the cluster

@@ -34,7 +34,7 @@
 
   - name: Run vCSA installer
     ansible.builtin.shell:
-      cmd: ./vcsa-deploy install --accept-eula --acknowledge-ceip --no-ssl-certificate-verification --log-dir /tmp/vcsa-deploy-logs /tmp/deploy.json
+      cmd: ./vcsa-deploy install -v --accept-eula --acknowledge-ceip --no-ssl-certificate-verification --log-dir /tmp/vcsa-deploy-logs /tmp/deploy.json
       chdir: "{{ vcenter.deployment.mount_path }}/vcsa-cli-installer/mac"
 
   - name: Unount ISO
