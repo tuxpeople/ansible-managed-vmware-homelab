@@ -1,0 +1,42 @@
+- hosts: esxi
+  gather_facts: true
+
+  tasks:
+    - name: "Search for VMs and templates in all datastores"
+      ansible.builtin.find:
+        paths: /vmfs/volumes/
+        recurse: true
+        patterns: "*.vm*x"
+        file_type: "file"
+        follow: true
+      register: result
+
+    - name: Filter the list of all found VMs and templates 
+      set_fact:
+        files: "{{ files|default([]) + result.files|rejectattr('path', 'match', '.*vCLS.*')|rejectattr('path', 'match', '.*VMware vCenter Server.*')|selectattr('path', 'match', '.*datastore.*')|map(attribute='path')|list|sort }}"
+      loop: "{{ groups['clusterhosts'] }}"
+      delegate_to: localhost
+      run_once: true # no need to do for each host
+
+    # - debug:
+    #     msg: "{{ item }}"
+    #   loop: "{{ files | unique | list }}"
+    #   delegate_to: localhost
+    #   run_once: true # no need to do for each host
+
+    - name: Register found VMs and templates to inventory
+      community.vmware.vmware_guest_register_operation:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        folder: "/vm/{{ 'templates' if item.split('/') | last | split('.') | last == 'vmtx' else 'imported' }}"
+        name: "{{ item.split('/') | last | split('.') | first }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster }}"
+        template: "{{ (item.split('/') | last | split('.') | last == 'vmtx') | bool }}"
+        path: "[{{ item.split('/')[3] }}] {{ item.split('/')[4:] | join('/')}}"
+        state: present
+        validate_certs: false
+      loop: "{{ files | unique }}"
+      delegate_to: localhost
+      run_once: true # no need to do for each host

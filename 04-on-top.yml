@@ -24,18 +24,30 @@
         folder_name: templates
         folder_type: vm
         state: present
-      register: vm_folder_creation_result
 
-    - name: Register a template in cluster "{{ vcenter.cluster }}"
-      community.vmware.vmware_guest_register_operation:
+    - name: Create a VM folder for imported VMs on datacenter  "{{ vcenter.datacenter }}"
+      community.vmware.vcenter_folder:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
         password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        datacenter:  "{{ vcenter.datacenter }}"
-        folder: "/vm/templates"
-        cluster: "{{ vcenter.cluster }}"
-        name: "{{ vm_name }}"
-        template: true
-        path: "[NFS] templates/{{ vm_name }}/{{ vm_name }}.vmtx"
+        datacenter_name:  "{{ vcenter.datacenter }}"
+        folder_name: imported
+        folder_type: vm
         state: present
+      delegate_to: localhost
+      run_once: true # no need to do for each host
+
+    # - name: Register a template in cluster "{{ vcenter.cluster }}"
+    #   community.vmware.vmware_guest_register_operation:
+    #     hostname: "{{ vcenter.hostname }}"
+    #     username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+    #     password: "{{ vcenter.sso_password }}"
+    #     validate_certs: false
+    #     datacenter:  "{{ vcenter.datacenter }}"
+    #     folder: "/vm/templates"
+    #     cluster: "{{ vcenter.cluster }}"
+    #     name: "{{ vm_name }}"
+    #     template: true
+    #     path: "[NFS] templates/{{ vm_name }}/{{ vm_name }}.vmtx"
+    #     state: present

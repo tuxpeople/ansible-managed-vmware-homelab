@@ -57,7 +57,7 @@
         cluster_name: "{{ vcenter.cluster }}"
         validate_certs: false
 
-    - name: VCenter - Add ESXi Host(s)
+    - name: "VCenter - Add ESXi Host(s) of cluster {{ vcenter.cluster }}"
       community.vmware.vmware_host:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"
@@ -82,7 +82,7 @@
         evc_mode: "{{ esxi.evc_mode }}"
         state: present
 
-    - name: VCenter - Add vCenter's ESXi host
+    - name: "VCenter - Add vCenter's ESXi host {{ vcenter.hostname }}"
       community.vmware.vmware_host:
         hostname: "{{ vcenter.hostname }}"
         username: "{{ vcenter.username }}@{{ vcenter.domain }}"

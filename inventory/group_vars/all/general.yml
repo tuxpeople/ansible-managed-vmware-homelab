@@ -61,8 +61,8 @@ nas:
     datastore_name: "iSCSI"
 
 vcenter:
-  hostname: 192.168.8.10
-  host: 192.168.8.14
+  hostname: vcenter.lab.tdeutsch.ch
+  host: esx4.lab.tdeutsch.ch
   username: "administrator"
   domain: "vsphere.local"
   sso_password: "{{ vcenter_sso_password }}"

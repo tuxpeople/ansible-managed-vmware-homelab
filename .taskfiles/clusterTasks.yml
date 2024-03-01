@@ -26,3 +26,4 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     cmds:
       - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/04-on-top.yml
+      - ansible-playbook -i {{.ANSIBLE_INVENTORY_DIR}}/hosts.yml {{.ANSIBLE_PLAYBOOK_DIR}}/05-register-vms-and-templates.yml

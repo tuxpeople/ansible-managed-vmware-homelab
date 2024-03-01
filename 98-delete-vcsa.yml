@@ -1,0 +1,11 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: De-register vCenter to inventory
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter.host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        name: "VMware vCenter Server"
+        state: absent
+        validate_certs: false

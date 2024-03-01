@@ -34,8 +34,8 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     interactive: true
     cmds:
-      - task: :esxi:reboot-all
-      - task: :vcsa:power-on
+      # - task: :esxi:reboot-all
+      # - task: :vcsa:power-on
       - task: nuke
-      - task: :vcsa:clean-up
+      # - task: :vcsa:clean-up
       - task: setup
