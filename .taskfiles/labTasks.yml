@@ -24,6 +24,7 @@ tasks:
     dir: "{{.ANSIBLE_DIR}}"
     interactive: true
     cmds:
+      - task: :vcsa:power-on
       - task: :cluster:init
       - task: :cluster:networking
       - task: :cluster:storage

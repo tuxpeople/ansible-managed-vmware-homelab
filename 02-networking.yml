@@ -1,3 +1,41 @@
+- hosts: esxi
+  gather_facts: false
+
+  tasks:
+    # ensure SSH is enabled (ansible-playbook 99-enable-ssh.yml)
+    - name: Start SSH service setting for all ESXi Hosts
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: present
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+    - name: Check if primary NIC exists
+      shell: esxcli network nic list | grep '{{ physical_nic_1 }}'
+
+    - name: Check if secondary NIC exists
+      shell: esxcli network nic list | grep '{{ physical_nic_2 }}'
+
+    - name: Stop SSH service setting for all ESXi Hosts
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: absent
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
+
+
 - hosts: localhost
   gather_facts: false
   tasks:

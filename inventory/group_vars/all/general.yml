@@ -10,6 +10,15 @@ vsphere_version: 8.0.0
 folder_name: "homelab_vms"
 resource_pool_name: "homelab_pool"
 
+vm_folders:
+  - vm
+  - templates
+  - Linux
+  - Linux/Misc
+  - Kubernetes
+  - Kubernetes/Test
+  - Kubernetes/Test/RKE2
+
 ## NETWORKING
 
 # VLAN ID for DVPG-Management Network
@@ -25,7 +34,7 @@ vlan_id_storage: "312"
 vlan_id_vmnetwork: "313"
 
 # USB NIC driver fling (https://flings.vmware.com/usb-network-native-driver-for-esxi) - what file?
-source_usb_driver_zip: /Users/tdeutsch/Downloads/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
+source_usb_driver_zip: /Volumes/data/software/vsphere/8.0.2/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
 # Where to copy it on each host / install?
 dest_usb_driver_zip: /scratch/tmp/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
 
@@ -93,7 +102,8 @@ esxi:
   default_vm_pg: VM Network
   # Uplinks (`esxcli network nic list`)
   backup:
-    dir: "{{ playbook_dir }}/backup/"
+    # dir: "{{ playbook_dir }}/backup/"
+    dir: "~/iCloudDrive/Allgemein/backup/vsphere/"
   ntp_servers:
     - ntp11.metas.ch
     - ntp12.metas.ch
