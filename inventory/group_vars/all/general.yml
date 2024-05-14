@@ -1,5 +1,5 @@
 ansible_user: root
-ansible_connection: ssh
+#ansible_connection: ssh
 
 # only needed for the initial bootstrapping (it's used to SCP files to ESXi hosts)
 ansible_ssh_private_key_file: /Users/tdeutsch/.ssh/id_rsa
@@ -7,21 +7,22 @@ ansible_ssh_private_key_file: /Users/tdeutsch/.ssh/id_rsa
 # used for vDS configuration to match hosts ESXi (ex: 8.0.1)
 vsphere_version: 8.0.0
 
-vcenter_url: https://vcenter.lab.tdeutsch.ch
-vcenter_hostname: 192.168.8.10
-# (optional) used for ensuring the VCSA is on in `99-power-on-vcsa-vm.yml`
-vcenter_esxi_host: 192.168.8.14
-
 folder_name: "homelab_vms"
 resource_pool_name: "homelab_pool"
 
-datacenter_name: "SKY"
-cluster_name: "homelab-cluster"
+vm_folders:
+  - vm
+  - templates
+  - Linux
+  - Linux/Misc
+  - Kubernetes
+  - Kubernetes/Test
+  - Kubernetes/Test/RKE2
 
 ## NETWORKING
 
 # VLAN ID for DVPG-Management Network
-vlan_id_management: "0"
+vlan_id_management: "308"
 
 # VLAN ID for DVPG-vMotion
 vlan_id_vmotion: "311"
@@ -33,15 +34,9 @@ vlan_id_storage: "312"
 vlan_id_vmnetwork: "313"
 
 # USB NIC driver fling (https://flings.vmware.com/usb-network-native-driver-for-esxi) - what file?
-source_usb_driver_zip: /Users/tdeutsch/Downloads/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
+source_usb_driver_zip: /Volumes/data/software/vsphere/8.0.2/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
 # Where to copy it on each host / install?
 dest_usb_driver_zip: /scratch/tmp/ESXi80U2-VMKUSB-NIC-FLING-67561870-component-22416446.zip
-
-# Uplinks (ensure these match what you have! `esxcli network nic list`)
-physical_nic_1: "vmnic0"
-physical_nic_2: "vusb0"
-
-evc_mode: "intel-sandybridge"
 
 # !! vmk0 is taken by mgmt by default
 # Set vmk_vmotion for vmk creation
@@ -55,17 +50,64 @@ ops_dvs_switch_name: "Operation-VDS"
 # VM Traffic switch.
 vm_dvs_switch_name: "VM-VDS"
 
-# Storage - this is the iSCSI discovery IP. Ansible appends :3260
-send_target_address: 10.20.30.40
-# This defaults to vmhba64 and most likely doesn't need to change.
-# Confirm with: esxcli iscsi adapter list
-vmhba_name: "vmhba64"
+physical_nic_1: "vmnic0"
+physical_nic_2: "vusb0"
 
 # nfs server details
-nfs_server_ip: 10.20.30.40
-nfs_volume_path: "/volume2/vsphere"
-# nfs or nfs41 - I found nfs41 to have issues on reboot due to file locking
-nfs_datastore_type: "nfs"
-nfs_datastore_name: "NFS"
+nas:
+  server_ip: 192.168.12.12
+  nfs:
+    volume_path: "/volume2/vsphere"
+    # nfs or nfs41 - nfs41 may have issues on reboot due to file locking
+    datastore_type: "nfs"
+    datastore_name: "datastore_NFS"
+  iscsi:
+    target: iqn.2000-01.com.synology:thiazi.Target-1.5a80e3dd780
+    # This defaults to vmhba64 and most likely doesn't need to change.
+    # Confirm with: esxcli iscsi adapter list
+    vmhba_name: "vmhba64"
+    datastore_type: "vmfs"
+    datastore_name: "datastore_iSCSI"
 
-esx_backup_dir: "{{ playbook_dir }}/backup/"
+vcenter:
+  hostname: vcenter.lab.tdeutsch.ch
+  host: esx4.lab.tdeutsch.ch
+  username: "administrator"
+  domain: "vsphere.local"
+  sso_password: "{{ vcenter_sso_password }}"
+  root_password: "{{ vcenter_root_password }}"
+  license: "{{ vcenter_license }}"
+  datacenter: "SKY"
+  cluster: "homelab-cluster"
+  server: https://vcenter.lab.tdeutsch.ch
+  deployment:
+    iso: "/Volumes/data/software/vsphere/8.0.2/VMware-VCSA-all-8.0.2-22385739.iso"
+    mount_path: "/tmp/vcsa_iso"
+    name: VMware vCenter Server
+    size: tiny
+    port_group: "{{ esxi.default_vm_pg }}"
+    datastore: datastore14_ssd
+    networking:
+      ip: 192.168.8.10
+      prefix: 24
+      gateway: 192.168.8.1
+      dns_server: 192.168.8.1
+
+esxi:
+  username: "root"
+  password: "{{ esxi_password }}"
+  license: "{{ esxi_license }}"
+  evc_mode: "intel-sandybridge"
+  default_vSwitch: vSwitch0
+  default_vm_pg: VM Network
+  # Uplinks (`esxcli network nic list`)
+  backup:
+    # dir: "{{ playbook_dir }}/backup/"
+    dir: "~/iCloudDrive/Allgemein/backup/vsphere/"
+  ntp_servers:
+    - ntp11.metas.ch
+    - ntp12.metas.ch
+    - ntp13.metas.ch
+    - 0.pool.ntp.org
+
+vm_name: ubuntu-mantic-23.10-cloudimg

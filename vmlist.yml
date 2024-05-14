@@ -1,0 +1,90 @@
+- hosts: localhost
+  gather_facts: false
+  vars:
+    datastore: ""
+    http_accept: "application/json"
+    vcsa_api_session_key: ""
+
+  tasks:
+    # - name: Gather all registered virtual machines
+    #   community.vmware.vmware_vm_info:
+    #     hostname: "{{ vcenter.hostname }}"
+    #     username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+    #     password: "{{ vcenter.sso_password }}"
+    #     validate_certs: false
+    #   delegate_to: localhost
+    #   register: vm_info
+
+    # - debug:
+    #     var: info
+    #   vars:
+    #     info: "{{ vm_info.virtual_machines|
+    #             rejectattr('guest_name', 'eq', 'VMware vCenter Server')|
+    #             map(attribute='guest_name') }}"
+
+    # - name: tbd
+    #   community.vmware.vmware_guest_powerstate:
+    #     hostname: "{{ vcenter.hostname }}"
+    #     username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+    #     password: "{{ vcenter.sso_password }}"
+    #     validate_certs: false
+    #     name: "{{ item }}"
+    #     state: powered-off
+    #   delegate_to: localhost
+    #   register: deploy
+    #   loop: "{{ vm_info.virtual_machines|
+    #             rejectattr('guest_name', 'eq', 'VMware vCenter Server')|
+    #             map(attribute='guest_name') }}"
+
+    - name: Create a directory on a datastore
+      vmware_datastore_info: 
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        datacenter: "{{ vcenter.datacenter }}"
+      register: info 
+
+    - debug: var=info.datastores
+
+    - name: Get API Session Key
+      uri:
+        url: "https://{{ vcenter.hostname }}/rest/com/vmware/cis/session"
+        user: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        method: POST
+        headers:
+          Accept: "{{ http_accept }}"
+        status_code: [200, 400]
+      register: vcsa_auth_response
+      until: vcsa_auth_response.status == 200
+      retries: 100
+      delay: 10
+
+    - name: Set API Session Key
+      set_fact:
+        vcsa_api_session_key: "{{ vcsa_auth_response.json.value }}"
+
+    - name: Get Information
+      uri:
+        url: "https://{{ vcenter.hostname }}/rest/vcenter/datastore"
+        validate_certs: false
+        method: GET
+        headers:
+          Accept: "{{ http_accept }}"
+          vmware-api-session-id: "{{ vcsa_api_session_key }}"
+        status_code: [200]
+      register: vcsa_clusters
+
+    - name: Delete API Session Key
+      uri:
+        url: "https://{{ vcenter.hostname }}/rest/com/vmware/cis/session"
+        validate_certs: false
+        method: DELETE
+        headers:
+          Accept: "{{ http_accept }}"
+          vmware-api-session-id: "{{ vcsa_api_session_key }}"
+        status_code: [200]
+      register: vcsa_auth_logout_response

@@ -1,0 +1,17 @@
+---
+- hosts: esx1
+  gather_facts: true
+  tasks:
+- name: gather host facts
+  community.vmware.vmware_host_facts:
+    hostname: "{{ ansible_host }}"
+    username: "{{ esxi.username }}"
+    password: "{{ esxi.password }}"
+    validate_certs: false
+    schema: summary
+  register: host_facts
+  delegate_to: localhost
+
+    - name: display host facts
+      debug:
+        msg: "{{ host_facts }}"

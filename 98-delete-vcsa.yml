@@ -1,12 +1,11 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-    - name: Ensure VCSA is off
-      community.vmware.vmware_guest_powerstate:
+    - name: De-register vCenter to inventory
+      community.vmware.vmware_guest:
         hostname: "{{ vcenter.host }}"
         username: "{{ esxi.username }}"
         password: "{{ esxi.password }}"
-        validate_certs: false
         name: "VMware vCenter Server"
-        state: shutdown-guest
-        state_change_timeout: 200
+        state: absent
+        validate_certs: false

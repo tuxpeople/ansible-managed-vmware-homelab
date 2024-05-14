@@ -1,0 +1,111 @@
+- hosts: esxi
+  gather_facts: true
+  tasks:
+
+    - name: Gather all registered virtual machines
+      community.vmware.vmware_vm_info:
+        hostname: "{{ ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Setting facts for VMs
+      set_fact:
+        running_vm: "{{ vm_info.virtual_machines|
+                selectattr('power_state', 'eq', 'poweredOn')|
+                map(attribute='guest_name') }}"
+        vcls_vm: "{{ vm_info.virtual_machines|
+                selectattr('guest_name', 'match', '.*vCLS.*')|
+                map(attribute='guest_name') }}"
+
+    - name: Set the state of all running virtual machines to poweroff
+      community.vmware.vmware_guest_powerstate:
+        hostname: "{{ ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        name: "{{ item }}"
+        state: powered-off
+      loop: "{{ running_vm }}"
+      delegate_to: localhost
+
+    - name: Delete osbsolete vCLS VMs
+      community.vmware.vmware_guest:
+        hostname: "{{ ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        name: "{{ item }}"
+        state: absent
+        validate_certs: false
+      loop: "{{ vcls_vm }}"
+      delegate_to: localhost
+
+    - name: Delete VCSA VM
+      community.vmware.vmware_guest:
+        hostname: "{{ vcenter.host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        name: "VMware vCenter Server"
+        state: absent
+        validate_certs: false
+      delegate_to: localhost
+      run_once: true # no need to do for each host
+
+    - name: Restore the ESXi configuration (Error "Failed to exit maintenance mode" is expected)
+      community.vmware.vmware_cfg_backup:
+        hostname: "{{ ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        state: loaded
+        src: "{{ esxi.backup.dir }}/esx-backup-{{ ansible_host }}-grundsetup.tgz"
+      ignore_errors: True
+      delegate_to: localhost
+
+    - name: ESXi wait for the reboot to complete
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 443
+        delay: 5
+        state: started
+        timeout: 3600
+      delegate_to: localhost
+
+    - name: Wait for ESXi to be ready
+      uri:
+        url: "https://{{ ansible_host }}/ui/"
+        return_content: yes
+        validate_certs: false
+      register: result
+      until: "'VMware' in result.content"
+      retries: 20
+      delay: 10
+      delegate_to: localhost
+
+    - name: Start SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ ansible_host }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: present
+      delegate_to: localhost
+
+    - name: Update ESXi ssh host key in known hosts file
+      ansible.builtin.shell: "~/iCloudDrive/Allgemein/bin//fix-ssh-key {{ ansible_host }}"
+      delegate_to: localhost
+
+    - name: Stop SSH service
+      community.vmware.vmware_host_service_manager:
+        esxi_hostname: "{{ ansible_host }}"
+        hostname: "{{ ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        service_name: TSM-SSH
+        state: absent
+      delegate_to: localhost

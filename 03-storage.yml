@@ -3,66 +3,96 @@
   tasks:
     # ensure it's nfs or nfs4 - that is a tripping point.
     # I found NFS to be very finicky overall and would recommend if at all possible to use iSCSI instead.
-    # I ran into issues like this: https://www.reddit.com/r/vmware/comments/dlc85v/nfs_datastore_appending_1_to_name_on_mountreboot/
+    # I ran into issues like this: https://www.reddit.com/r/vmware/comments/dlc85v/nfs.datastore_appending_1_to_name_on_mountreboot/
     # until I switched to v3
-    - name: Mounting NFS datastore '{{ nfs_server_ip }}' to all ESXi hosts
+    - name: "NFS - Mounting datastore {{ nas.nfs.datastore_name }} from {{ nas.server_ip }} to all ESXi hosts"
       community.vmware.vmware_host_datastore:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
         validate_certs: false
-        datastore_name: "{{ nfs_datastore_name }}"
-        datastore_type: "{{ nfs_datastore_type }}"
-        nfs_server: "{{ nfs_server_ip }}"
-        nfs_path: "{{ nfs_volume_path }}"
+        datastore_name: "{{ nas.nfs.datastore_name }}"
+        datastore_type: "{{ nas.nfs.datastore_type }}"
+        nfs_server: "{{ nas.server_ip }}"
+        nfs_path: "{{ nas.nfs.volume_path }}"
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         state: present
       loop: "{{ groups['esxi'] }}"
 
-    - name: Enable iSCSI on all ESXi hosts
+    - name: iSCSI - Enable iSCSI on all ESXi hosts
       community.vmware.vmware_host_iscsi:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
         validate_certs: false
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         state: enabled
       loop: "{{ groups['clusterhosts'] }}"
 
-    - name: Add a dynamic target to iSCSI config on all ESXi hosts
+    - name: iSCSI - Add a dynamic target to iSCSI config on all ESXi hosts
       community.vmware.vmware_host_iscsi:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
         validate_certs: false
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         iscsi_config:
-          vmhba_name: "{{ vmhba_name }}"
-          send_target:
-            address: "{{ send_target_address }}"
+          vmhba_name: "{{ nas.iscsi.vmhba_name }}"
+          # send_target:
+          static_target:
+            iscsi_name: "{{ nas.iscsi.target }}"
+            address: "{{ nas.server_ip }}"
         state: present
       loop: "{{ groups['clusterhosts'] }}"
 
-    - name: Add VMKernels to iSCSI config on all ESXi hosts
+    - name: iSCSI - Add VMKernels to iSCSI config on all ESXi hosts
       community.vmware.vmware_host_iscsi:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
         validate_certs: false
         esxi_hostname: "{{ hostvars[item].ansible_host }}"
         iscsi_config:
-          vmhba_name: "{{ vmhba_name }}"
+          vmhba_name: "{{ nas.iscsi.vmhba_name }}"
           # must be a vmk
           port_bind:
             - "{{ vmk_storage }}"
         state: present
       loop: "{{ groups['clusterhosts'] }}"
 
-    - name: Rescan datastores for a given cluster - all found hosts will be scanned
+    - name: iSCSI - Rescan datastores for a given cluster - all found hosts will be scanned
       community.vmware.vmware_host_scanhba:
-        hostname: "{{ vcenter_hostname }}"
-        username: "{{ vcenter_username }}"
-        password: "{{ vcenter_password }}"
-        cluster_name: "{{ cluster_name }}"
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        cluster_name: "{{ vcenter.cluster }}"
         validate_certs: false
         refresh_storage: true
+
+    - name: iSCSI - Gather iSCSI configuration information of ESXi host
+      community.vmware.vmware_host_disk_info:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+      delegate_to: localhost
+      loop: "{{ groups['clusterhosts'] }}"
+      register: iscsi_info
+
+    - set_fact:
+        iscsi_names: "{{ iscsi_info | json_query(query)}}"
+      vars:
+        query: "results[*].hosts_disk_info.*[?device_ctd_list[0] == `vmhba64:C0:T0:L1`].canonical_name"
+
+    - name: iSCSI - Mount iSCSI datastore
+      community.vmware.vmware_host_datastore:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        esxi_hostname: "{{ hostvars[groups['clusterhosts'][0]].ansible_host }}"
+        datastore_name: "{{ nas.iscsi.datastore_name }}"
+        datastore_type: "{{ nas.iscsi.datastore_type }}"
+        vmfs_device_name: "{{ iscsi_names[0][0][0] }}"
+        state: present

@@ -13,6 +13,7 @@ includes:
   vcsa: .taskfiles/VCSATasks.yml
   esxi: .taskfiles/ESXiTasks.yml
   cluster: .taskfiles/clusterTasks.yml
+  lab: .taskfiles/labTasks.yml
 
 tasks:
   init:

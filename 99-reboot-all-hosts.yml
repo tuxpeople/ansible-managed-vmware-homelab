@@ -1,28 +1,27 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-  
-  # Forcefully reboot all esxi hosts
-  - name: Reboot each host in the cluster
-    community.vmware.vmware_host_powerstate:
-      esxi_hostname: '{{ hostvars[item].ansible_host }}'
-      hostname: '{{ hostvars[item].ansible_host }}'
-      username: '{{ esxi_username }}'
-      password: '{{ esxi_password }}'
-      validate_certs: false
-      state: reboot-host
-      force: true # I don't care that it's not in maintenance mode
-    loop: "{{ groups['esxi'] }}"
-    run_once: true # no need to do for each host
-    delegate_to: localhost
+    # Forcefully reboot all esxi hosts
+    - name: Reboot each host in the cluster
+      community.vmware.vmware_host_powerstate:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        state: reboot-host
+        force: true # I don't care that it's not in maintenance mode
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost
 
-  - name: ESXi wait for the reboot to complete
-    ansible.builtin.wait_for:
-      host: '{{ hostvars[item].ansible_host }}'
-      port: 443
-      delay: 5
-      state: started
-      timeout: 3600
-    loop: "{{ groups['esxi'] }}"
-    run_once: true # no need to do for each host
-    delegate_to: localhost
+    - name: ESXi wait for the reboot to complete
+      ansible.builtin.wait_for:
+        host: "{{ hostvars[item].ansible_host }}"
+        port: 443
+        delay: 5
+        state: started
+        timeout: 3600
+      loop: "{{ groups['esxi'] }}"
+      run_once: true # no need to do for each host
+      delegate_to: localhost

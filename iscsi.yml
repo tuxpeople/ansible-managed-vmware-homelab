@@ -1,0 +1,30 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: refresh
+      community.vmware.vmware_host_scanhba:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+        refresh_storage: true
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+
+    - name: Gather all iscsi
+      community.vmware.vmware_host_disk_info:
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        hostname: "{{ hostvars[item].ansible_host }}"
+        username: "{{ esxi.username }}"
+        password: "{{ esxi.password }}"
+        validate_certs: false
+      loop: "{{ groups['clusterhosts'] }}"
+      run_once: true # no need to do for each host
+      register: iscsi_info
+    - set_fact:
+        iscsi_names: "{{ iscsi_info | json_query(query)}}"
+      vars:
+        query: "results[*].hosts_disk_info.*[?device_ctd_list[0] == `vmhba64:C0:T0:L1`].canonical_name"
+    - debug:
+        var: iscsi_names[0][0][0] 

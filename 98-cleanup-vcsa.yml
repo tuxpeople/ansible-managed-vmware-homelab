@@ -1,22 +1,50 @@
 - hosts: localhost
   gather_facts: false
   tasks:
+    - name: Remove ESXi Host(s) from vCenter
+      community.vmware.vmware_host:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter: "{{ vcenter.datacenter }}"
+        cluster: "{{ vcenter.cluster }}"
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        esxi_username: "{{ esxi.username }}"
+        esxi_password: "{{ esxi.password }}"
+        state: absent
+        validate_certs: false
+      loop: "{{ groups['clusterhosts'] }}"
+      ignore_errors: True
 
-  - name: Delete Cluster - '{{ cluster_name }}'
-    community.vmware.vmware_cluster:
-      hostname: '{{ vcenter_hostname }}'
-      username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
-      datacenter_name: '{{ datacenter_name }}'
-      cluster_name: '{{ cluster_name }}'
-      state: absent
-      validate_certs: false
+    - name: Delete Cluster - '{{ vcenter.cluster }}'
+      community.vmware.vmware_cluster:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        datacenter_name: "{{ vcenter.datacenter }}"
+        cluster_name: "{{ vcenter.cluster }}"
+        state: absent
+        validate_certs: false
 
-  - name: Delete Datacenter - '{{ datacenter_name }}'
-    community.vmware.vmware_datacenter:
-      hostname: '{{ vcenter_hostname }}'
-      username: '{{ vcenter_username }}'
-      password: '{{ vcenter_password }}'
-      datacenter_name: '{{ datacenter_name }}'
-      state: absent
-      validate_certs: false
+    # - name: Delete Datacenter - '{{ vcenter.datacenter }}'
+    #   community.vmware.vmware_datacenter:
+    #     hostname: "{{ vcenter.hostname }}"
+    #     username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+    #     password: "{{ vcenter.sso_password }}"
+    #     datacenter_name: "{{ vcenter.datacenter }}"
+    #     state: absent
+    #     validate_certs: false
+
+    - name: Unmounting NFS datastore '{{ nas.server_ip }}' to all ESXi hosts
+      community.vmware.vmware_host_datastore:
+        hostname: "{{ vcenter.hostname }}"
+        username: "{{ vcenter.username }}@{{ vcenter.domain }}"
+        password: "{{ vcenter.sso_password }}"
+        validate_certs: false
+        datastore_name: "{{ nas.nfs.datastore_name }}"
+        datastore_type: "{{ nas.nfs.datastore_type }}"
+        nfs_server: "{{ nas.server_ip }}"
+        nfs_path: "{{ nas.nfs.volume_path }}"
+        esxi_hostname: "{{ hostvars[item].ansible_host }}"
+        state: absent
+      loop: "{{ groups['esxi'] }}"
